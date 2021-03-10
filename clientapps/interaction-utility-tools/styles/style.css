@@ -1,0 +1,138 @@
+body {
+    display: flex;
+}
+
+p {
+    font-size: 14px;
+    font-family: Roboto;
+}
+
+textarea {
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.whole-area {
+    flex: 0 0 100%;    
+}
+
+.chat-area {
+    flex: 0 0 70%;
+}
+
+.field {
+    position: fixed;
+    height: 70%;
+    overflow: auto;
+}
+
+.my-tab {
+    margin: 10px !important;
+    display: none;
+}
+
+.tabs ul {
+    border-bottom-color: #FF4F1F;
+}
+
+.tabs li.is-active a{
+    color: #FF4F1F;
+}
+
+.tabs.is-boxed li.is-active a{
+    border-color: #FF4F1F;
+}
+
+#tabcontents {
+    padding: 6px 12px;
+}
+
+.chat-message {
+    background-color: #F2F2F2;
+    border-radius: 5px;
+    box-shadow: 0 0 6px #B2B2B2;
+    display: inline-block;
+    padding: 5px 18px;
+    position: relative;
+    vertical-align: top;
+    width: 80%;
+}
+
+.customer {
+    background-color: white;
+    color: #FF4F1F;
+    float: right;   
+    margin: 5px 0px 5px 45px;
+    padding: 10px 18px;   
+}
+
+.agent {
+    background-color: #FF4F1F;
+    color: white;
+    float: left;    
+    margin: 5px 45px 5px 0px;
+    padding: 10px 18px;   
+}
+
+.agent-assistant {
+    flex: 0 0 70%;
+    position: fixed;
+    bottom: 0%;
+}
+
+.suggest-container {
+    margin: 10px;
+}
+
+.agent-assistant .container {
+    position: relative;
+    flex: 0 0 70%;
+    bottom: 0%;
+}
+
+.agent-assistant a{
+    color: #FF4F1F;
+}
+
+.agent-assistant a:hover{
+    text-decoration: underline;
+}
+
+.section-chat {
+    padding: 24px;
+}
+
+.section-assist {
+    padding: 24px 24px 10px 24px;
+}
+
+.genesysCloudButton {
+    background-color: #FF4F1F;
+    border-color: #FF4F1F;
+    border-radius: 4px;
+    border: 1px solid #FF4F1F;
+    color: #fff;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    display: none;
+    font-size: 14px;
+    font-family: Roboto;
+    height: 40px;
+    width: 100px;
+    padding: 0 10px;
+    padding-left: 6px;
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.genesysCloudButton:hover {
+    -webkit-filter: contrast(80%) invert(20%);
+    filter: contrast(80%) invert(20%)
+}
+
+.textToTranslate {
+    width: 450px;
+    height: 60px;
+}
