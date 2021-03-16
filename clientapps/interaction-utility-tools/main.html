@@ -54,10 +54,12 @@ client.setEnvironment(platformClient.PureCloudRegionHosts.eu_west_1);        //r
 // API instances
 const usersApi = new platformClient.UsersApi();
 const conversationsApi = new platformClient.ConversationsApi();
+const extcontactApi = new platformClient.ExternalContactsApi();
 
 let userId = '';
 let agentID;
 let conversation;
+let customerParticipant;
 
 let chatConversations = []; // Chat conversations handled by the user
 let activeChatId = ''; // Chat that is in focus on the UI
@@ -66,57 +68,85 @@ let activeCommunicationId = '';
 /** --------------------------------------------------------------
  *                       INITIAL SETUP
  * -------------------------------------------------------------- */
-//const urlParams = new URLSearchParams(window.location.search);
-//let currentConversationId = urlParams.get('conversationid');
+const urlParams = new URLSearchParams(window.location.search);
+let currentConversationId = urlParams.get('conversationid');
  
  client.loginImplicitGrant(
     'f0c680f2-f922-42c3-9b27-10ad7bb2a5dd', 						//replace with your clientID
     'https://gsyitascdemo.github.io/mywidgethosting/clientapps/interaction-utility-tools/main.html',					////replace localhost with your host endpoint
+	{ state: currentConversationId }
 	)
 
 .then(data => {
-    console.log(data);
+    console.log('##Log: ',data);
+	
+	// Assign conversation id
+    currentConversationId = data.state;
+	console.log('##Log - currentConversationId: ',currentConversationId);
 
     // Get Details of current User
     return usersApi.getUsersMe();
+	
 })
 .then(userMe => {
     userId = userMe.id;
 	
 })
 .then(() => { 
-    // Setup notification
-    return setupChatChannel();
-})
+    // Setup notification 
+   // return setupChatChannel();
+	
+	console.log('##Log - callinng getConversation and assign it to conversation with parameter currentConversationId : ',currentConversationId);
+	
+	conversation = conversationsApi.getConversation(currentConversationId)
+	.then((data) => {
+		//console.log('##Log getConversation success! data: ', ${JSON.stringify(data, null, 2)});
+		console.log('##Log getConversation success! data: ', data);
+		conversation = data;
+		customerParticipant = conversation.participants.find(p => p.purpose == 'customer');
+		console.log('##Log participant customer purpose : ', customerParticipant);
+		
+		let externalContactId = customerParticipant.externalContactId;
+		console.log('##Log Calling getExternal Contact Id with Id: ', externalContactId);
+		
+		extcontactApi.getExternalcontactsContact(externalContactId)
+		.then((data) => {
+			//console.log(`getExternalcontactsContact success! data: ${JSON.stringify(data, null, 2)}`);
+			console.log('##Log getExternalContactId found: ', data);
+			customerParticipant = data;
+			return customerParticipant;
+			console.log('##Log returned customerParticipand data: ', customerParticipant);
+		})
+		.catch((err) => {
+			console.log('There was a failure calling getExternalcontactsContact');
+			console.error(err);
+		});
+	})
+	.catch((err) => {
+		console.log('##Log There was a failure calling getConversation');
+		console.error(err);
+	});
+  })
 .then(() => {
 
-    console.log('Finished Setup for custom event listener v1.1 - Everything is up & running');   
+    console.log('Finished! - Everything is up & running');   
 
 // Error Handling
 
 }).catch(e => console.log(e));
 
-/*conversationsApi.getConversation(currentConversationId)
-  .then((data) => {
-    console.log('getConversation Danny success! data: ${JSON.stringify(data, null, 2)}');
-  })
-  .catch((err) => {
-    console.log('There was a failure calling getConversation');
-    console.error(err);
-  });
-*/
 /**--------------------------------------------------------
  *                COMMANDS SECTION
  * ---------------------------------------------------------
  */
 
-function initiateOutboundEmail(emailToAddress){
-    console.log('##: initiateOutboundEmailCommand Pressed()');
+function initiateOutboundEmail(){
+    console.log('##: initiateOutboundEmailCommand Pressed() with the following customerParticipant data:', customerParticipant);
 	
 	let emailData = {
 		queueId: '38d37d70-7963-4d62-8a19-74563fa74e20',
-		toAddress: emailToAddress,
-		toName: 'Danilo Bianchi',
+		toAddress: customerParticipant.workEmail,
+		toName: customerParticipant.firstName.concat(customerParticipant.lastName),
 	//	fromAddress: 'no-reply@mypurecloud.com',
 		fromName: 'Support Service',
 		subject: 'New Email Outbound Subject',
@@ -131,17 +161,17 @@ function initiateOutboundEmail(emailToAddress){
 		.catch((err) => console.log(err));
 }
 
-function initiateOutboundSMS(smsToNumber, extContactId){
-    console.log('##: initiateOutboundSMS Command Pressed()');
+function initiateOutboundSMS(){
+    console.log('##: initiateOutboundSMS Command Pressed() with the following customerParticipant data:', customerParticipant);
 	
 	let smsData = {
 		queueId: '38d37d70-7963-4d62-8a19-74563fa74e20',
-		toAddress: smsToNumber,
+		toAddress: customerParticipant.cellPhone.e164,
 		toAddressMessengerType: 'sms',
-		externalContactId: extContactId
+		externalContactId: customerParticipant.id
 	};
 
-	conversationsApi.postConversationsEmails(smsData)
+	conversationsApi.postConversationsMessage(smsData)
 		.then((conversation) => {
 			const conversationId = conversation.id;
 			console.log(`Created sms, conversation id:${conversationId}`);
@@ -149,8 +179,8 @@ function initiateOutboundSMS(smsToNumber, extContactId){
 		.catch((err) => console.log(err));
 }
 
-function initiateOutboundCall(callToNumber, extContactId){
-    console.log('##: initiateOutboundCall Command Pressed()');
+function initiateOutboundCall(){
+    console.log('##: initiateOutboundCall Command Pressed() with the following customerParticipant data:', customerParticipant);
 	
 /*	let callData = {
 		phoneNumber: '', 
@@ -174,13 +204,14 @@ function initiateOutboundCall(callToNumber, extContactId){
 	};
 */
 		let callData = {
-		phoneNumber: callToNumber, 
+		phoneNumber: customerParticipant.cellPhone.e164, 
 		callFromQueueId: '38d37d70-7963-4d62-8a19-74563fa74e20', 
 	};
 
-	conversationsApi.postConversationsCalls(callData)
+	conversationsApi.postConversationsCalls(callData)				
 		.then((conversation) => {
 			const conversationId = conversation.id;
+			console.log ('Conversation created: ',conversation);
 			console.log(`Created outbound call, conversation id:${conversationId}`);
 		})
 		.catch((err) => console.log(err));
@@ -193,14 +224,11 @@ function initiateOutboundCall(callToNumber, extContactId){
           <div class="container">
             <label class="label">Utilities Commands</label>
 			<h4>Email Channel</h4>
-			<button class="button button2" onclick="initiateOutboundEmail('danilo.tiberia@genesys.com')">Compose new Outbound Email to: Danilo Bianchi
-			</button>
+			<button class="button button2" onclick="initiateOutboundEmail()">New Outbound email</button>
 			<h4>SMS Channel</h4>
-			<button class="button button2" onclick="initiateOutboundSMS('+393456642225','34bb19e9-0beb-44cf-be3b-e00ba3a144ea')">Compose new Outbound SMS to: Danilo Bianchi
-			</button>
+			<button class="button button2" onclick="initiateOutboundSMS()">New Outbound SMS</button>
 			<h4>Voice Channel</h4>
-			<button class="button button2" onclick="initiateOutboundCall('+393456642225','34bb19e9-0beb-44cf-be3b-e00ba3a144ea')">Compose new Outbound Call to: Danilo Bianchi
-			</button>
+			<button class="button button2" onclick="initiateOutboundCall()">New Outbound Call</button>
             <div class="field chatTranscript">
               <div class="control has-icons-left">
                 <div class="my-tab tabs is-centered is-boxed">
