@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Interaction Utility Widget</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+    <link rel="stylesheet" href="./styles/style.css">
+	<style>
+.button {
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-family: Roboto
+  font-size: 14px;
+  font-weight: 400;
+  margin: 4px 2px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.button1 {background-color: #4CAF50;} /* Green */
+.button2 {	background-color: #2A60C8;
+			border-radius: 4px;
+			font-size: 12px;
+			padding-top: 5px;
+			padding-right: 5px;
+			padding-bottom: 5px;
+			padding-left: 5px;
+			width: 100%;
+			} /* Blue */
+</style>
+
+
+  </head>
+  <body>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <script src="https://sdk-cdn.mypurecloud.com/javascript/62.0.0/purecloud-platform-client-v2.min.js"></script>
+    <script>
+	
+	// Obtain a reference to the platformClient object
+const platformClient = require('platformClient');
+const client = platformClient.ApiClient.instance;
+
+// Set Genesys Cloud settings - point to the correct region
+client.setEnvironment(platformClient.PureCloudRegionHosts.eu_west_1);        //replace with your PureCloudRegionHosts-Region
+
+// API instances
+const usersApi = new platformClient.UsersApi();
+const conversationsApi = new platformClient.ConversationsApi();
+
+let userId = '';
+let agentID;
+let conversation;
+
+let chatConversations = []; // Chat conversations handled by the user
+let activeChatId = ''; // Chat that is in focus on the UI
+let activeCommunicationId = '';
+
+/** --------------------------------------------------------------
+ *                       INITIAL SETUP
+ * -------------------------------------------------------------- */
+//const urlParams = new URLSearchParams(window.location.search);
+//let currentConversationId = urlParams.get('conversationid');
+ 
+ client.loginImplicitGrant(
+    'f0c680f2-f922-42c3-9b27-10ad7bb2a5dd', 						//replace with your clientID
+    'https://gsyitascdemo.github.io/mywidgethosting/clientapps/interaction-utility-tools/main.html',					////replace localhost with your host endpoint
+	)
+
+.then(data => {
+    console.log(data);
+
+    // Get Details of current User
+    return usersApi.getUsersMe();
+})
+.then(userMe => {
+    userId = userMe.id;
+	
+})
+.then(() => { 
+    // Setup notification
+    return setupChatChannel();
+})
+.then(() => {
+
+    console.log('Finished Setup for custom event listener v1.1 - Everything is up & running');   
+
+// Error Handling
+
+}).catch(e => console.log(e));
+
+/*conversationsApi.getConversation(currentConversationId)
+  .then((data) => {
+    console.log('getConversation Danny success! data: ${JSON.stringify(data, null, 2)}');
+  })
+  .catch((err) => {
+    console.log('There was a failure calling getConversation');
+    console.error(err);
+  });
+*/
+/**--------------------------------------------------------
+ *                COMMANDS SECTION
+ * ---------------------------------------------------------
+ */
+
+function initiateOutboundEmail(emailToAddress){
+    console.log('##: initiateOutboundEmailCommand Pressed()');
+	
+	let emailData = {
+		queueId: '38d37d70-7963-4d62-8a19-74563fa74e20',
+		toAddress: emailToAddress,
+		toName: 'Danilo Bianchi',
+	//	fromAddress: 'no-reply@mypurecloud.com',
+		fromName: 'Support Service',
+		subject: 'New Email Outbound Subject',
+		direction: 'OUTBOUND'
+	};
+
+	conversationsApi.postConversationsEmails(emailData)
+		.then((conversation) => {
+			const conversationId = conversation.id;
+			console.log(`Created email, conversation id:${conversationId}`);
+		})
+		.catch((err) => console.log(err));
+}
+
+function initiateOutboundSMS(smsToNumber, extContactId){
+    console.log('##: initiateOutboundSMS Command Pressed()');
+	
+	let smsData = {
+		queueId: '38d37d70-7963-4d62-8a19-74563fa74e20',
+		toAddress: smsToNumber,
+		toAddressMessengerType: 'sms',
+		externalContactId: extContactId
+	};
+
+	conversationsApi.postConversationsEmails(smsData)
+		.then((conversation) => {
+			const conversationId = conversation.id;
+			console.log(`Created sms, conversation id:${conversationId}`);
+		})
+		.catch((err) => console.log(err));
+}
+
+function initiateOutboundCall(callToNumber, extContactId){
+    console.log('##: initiateOutboundCall Command Pressed()');
+	
+/*	let callData = {
+		phoneNumber: '', 
+		callerId: '', 
+		callerIdName: '', 
+		callFromQueueId: '38d37d70-7963-4d62-8a19-74563fa74e20', 
+		callQueueId: '', 
+		callUserId: '', 
+		priority: 0, 
+		languageId: '', 
+		routingSkillsIds: [], 
+		conversationIds: [], 
+		participants: [
+				{ 
+				address: callToNumber, 
+				name: '', 
+				userId: '', 
+				queueId: ''
+				}
+				]
+	};
+*/
+		let callData = {
+		phoneNumber: callToNumber, 
+		callFromQueueId: '38d37d70-7963-4d62-8a19-74563fa74e20', 
+	};
+
+	conversationsApi.postConversationsCalls(callData)
+		.then((conversation) => {
+			const conversationId = conversation.id;
+			console.log(`Created outbound call, conversation id:${conversationId}`);
+		})
+		.catch((err) => console.log(err));
+}
+
+	
+	</script>
+  <div class="chat-area">
+        <section class="section-chat">
+          <div class="container">
+            <label class="label">Utilities Commands</label>
+			<h4>Email Channel</h4>
+			<button class="button button2" onclick="initiateOutboundEmail('danilo.tiberia@genesys.com')">Compose new Outbound Email to: Danilo Bianchi
+			</button>
+			<h4>SMS Channel</h4>
+			<button class="button button2" onclick="initiateOutboundSMS('+393456642225','34bb19e9-0beb-44cf-be3b-e00ba3a144ea')">Compose new Outbound SMS to: Danilo Bianchi
+			</button>
+			<h4>Voice Channel</h4>
+			<button class="button button2" onclick="initiateOutboundCall('+393456642225','34bb19e9-0beb-44cf-be3b-e00ba3a144ea')">Compose new Outbound Call to: Danilo Bianchi
+			</button>
+            <div class="field chatTranscript">
+              <div class="control has-icons-left">
+                <div class="my-tab tabs is-centered is-boxed">
+                  <ul id="customersList"></ul>            
+                </div>
+                <div id="tabcontents"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+  </body>
+</html>
